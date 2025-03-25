@@ -1,0 +1,18 @@
+{
+  "title": "临时邮箱服务",
+  "generateBtn": "生成新邮箱",
+  "refreshBtn": "刷新",
+  "prefixPlaceholder": "自定义前缀（可选）",
+  "domainPlaceholder": "或输入自定义域名",
+  "emailLabel": "您的邮箱：",
+  "from": "发件人",
+  "received": "接收时间",
+  "error": "错误",
+  "timeLeft": "剩余时间",
+  "expired": "已过期",
+  "extendBtn": "延长10分钟",
+  "copyBtn": "复制",
+  "copied": "已复制",
+  "noEmail": "没有邮箱可复制",
+  "copyFailed": "复制失败"
+}
