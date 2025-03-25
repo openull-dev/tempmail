@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temp Email</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        h1 {
+            font-size: 26px;
+            color: #1565c0;
+            margin-bottom: 20px;
+        }
+        .intro, .tutorial {
+            font-size: 14px;
+            color: #666;
+            margin-top: 20px;
+            text-align: left;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        .intro h2, .tutorial h2 {
+            font-size: 18px;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .email-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .email-box {
+            flex-grow: 1;
+            max-width: 500px;
+            padding: 12px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0d47a1;
+            border: 1px solid #90caf9;
+            text-align: center;
+        }
+        .timer {
+            font-size: 14px;
+            color: #e63946;
+            margin-top: 5px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button, select, input {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        button {
+            background-color: #1976d2;
+            color: white;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        input, select {
+            background: #fff;
+            border: 1px solid #ccc;
+            width: 200px;
+        }
+        #lang-select {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+        #inbox-container {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .email-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .email-from {
+            font-size: 14px;
+            color: #666;
+        }
+        .email-time {
+            font-size: 12px;
+            color: #999;
+        }
+        .email-subject {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+        .email-body {
+            font-size: 14px;
+            color: #444;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">Temporary Email Service</h1>
+        <select id="lang-select" onchange="changeLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="it">Italiano</option>
+            <option value="es">Español</option>
+        </select>
+        <div class="email-section">
+            <div class="email-box" id="email-box">
+                <span id="email"></span>
+                <div class="timer" id="timer"></div>
+            </div>
+            <button onclick="copyEmail()" id="copy-btn">Copy</button>
+            <button onclick="extendEmail()" id="extend-btn">Extend 10 Minutes</button>
+        </div>
+        <div class="controls">
+            <input id="prefix-input" type="text" placeholder="Custom Prefix (Optional)">
+            <select id="domain-select">
+                <option value="" id="domain-select-default"></option>
+            </select>
+            <input id="domain-input" type="text" placeholder="Or Enter Custom Domain">
+            <button onclick="getNewEmail()" id="generate-btn">Generate New Email</button>
+            <button onclick="fetchEmails()" id="refresh-btn">Refresh</button>
+        </div>
+        <div id="inbox-container">
+            <div id="inbox"></div>
+        </div>
+        <div class="intro">
+            <h2 id="intro-title"></h2>
+            <p id="intro-content"></p>
+        </div>
+        <div class="tutorial">
+            <h2 id="tutorial-title"></h2>
+            <div id="tutorial-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentEmail = '';
+        let translations = {};
+        let currentLang = 'en';
+        let expirationTime = 0;
+        let mainDomain = '';
+        const supportedLangs = ['en', 'zh-CN', 'zh-TW', 'it', 'es'];
+
+        function detectBrowserLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            console.log('Detected browser language:', browserLang); // 调试：输出浏览器语言
+            if (!browserLang) return 'en';
+
+            const langLower = browserLang.toLowerCase();
+            if (langLower.startsWith('zh-cn')) return 'zh-CN';
+            if (langLower.startsWith('zh-tw') || langLower.startsWith('zh-hk')) return 'zh-TW';
+            if (langLower.startsWith('zh')) return 'zh-CN'; // 默认简体中文
+            if (langLower.startsWith('it')) return 'it';
+            if (langLower.startsWith('es')) return 'es';
+            return 'en'; // 默认回退到英文
+        }
+
+        async function loadTranslations(lang) {
+            try {
+                const response = await fetch(`/languages/${lang}.json`);
+                if (!response.ok) throw new Error(`Failed to load ${lang}.json`);
+                translations[lang] = await response.json();
+                console.log(`Loaded translations for ${lang}`); // 调试：确认加载成功
+            } catch (err) {
+                console.error(`Error loading ${lang}.json: ${err}`);
+                translations[lang] = translations['en']; // 回退到英文
+            }
+        }
+
+        async function initLanguages() {
+            // 先加载所有语言文件
+            await Promise.all(supportedLangs.map(lang => loadTranslations(lang)));
+            // 检测浏览器语言并设置
+            currentLang = detectBrowserLanguage();
+            console.log('Initial language set to:', currentLang); // 调试：输出初始语言
+            document.getElementById('lang-select').value = currentLang;
+            updateUI();
+        }
+        initLanguages();
+
+        async function loadMainDomain() {
+            const response = await fetch('/api/main-domain');
+            const data = await response.json();
+            mainDomain = data.domain;
+            document.title = `Temp Email - ${mainDomain}`;
+        }
+        loadMainDomain();
+
+        async function loadDomains() {
+            const response = await fetch('/api/domains');
+            const domains = await response.json();
+            const select = document.getElementById('domain-select');
+            const defaultOption = document.getElementById('domain-select-default');
+            defaultOption.textContent = translations[currentLang].domainSelect;
+            domains.forEach(domain => {
+                const option = document.createElement('option');
+                option.value = domain;
+                option.textContent = domain;
+                select.appendChild(option);
+            });
+            select.value = '';
+            getNewEmail();
+        }
+        loadDomains();
+
+        function changeLanguage(lang) {
+            currentLang = lang || document.getElementById('lang-select').value;
+            if (!supportedLangs.includes(currentLang)) {
+                currentLang = 'en';
+            }
+            console.log('Language changed to:', currentLang); // 调试：输出切换后的语言
+            document.getElementById('lang-select').value = currentLang;
+            if (translations[currentLang]) updateUI();
+        }
+
+        function updateUI() {
+            const t = translations[currentLang] || translations['en'];
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('generate-btn').textContent = t.generateBtn;
+            document.getElementById('refresh-btn').textContent = t.refreshBtn;
+            document.getElementById('extend-btn').textContent = t.extendBtn;
+            document.getElementById('copy-btn').textContent = t.copyBtn;
+            document.getElementById('prefix-input').placeholder = t.prefixPlaceholder;
+            document.getElementById('domain-input').placeholder = t.domainPlaceholder;
+            document.getElementById('intro-title').textContent = t.introTitle;
+            document.getElementById('intro-content').textContent = t.introContent;
+            document.getElementById('tutorial-title').textContent = t.tutorialTitle;
+            document.getElementById('tutorial-content').innerHTML = t.tutorialContent;
+            document.getElementById('domain-select-default').textContent = t.domainSelect;
+            fetchEmails();
+        }
+
+        async function getNewEmail() {
+            try {
+                let domain = document.getElementById('domain-input').value.trim();
+                if (!domain) {
+                    domain = document.getElementById('domain-select').value || '';
+                }
+                const prefix = document.getElementById('prefix-input').value.trim();
+                const url = `/api/new-email?domain=${encodeURIComponent(domain)}${prefix ? `&prefix=${encodeURIComponent(prefix)}` : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                currentEmail = data.email;
+                expirationTime = data.expiresAt;
+                document.getElementById('email').textContent = currentEmail;
+                updateTimer();
+                fetchEmails();
+            } catch (err) {
+                console.error('Error:', err);
+                alert((translations[currentLang] || translations['en']).error + ': ' + err.message);
+            }
+        }
+
+        async function extendEmail() {
+            if (!currentEmail) return;
+            try {
+                const response = await fetch(`/api/extend/${encodeURIComponent(currentEmail)}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                expirationTime = data.expiresAt;
+                updateTimer();
+            } catch (err) {
+                console.error('Error extending email:', err);
+                alert((translations[currentLang] || translations['en']).error + ': ' + err.message);
+            }
+        }
+
+        function copyEmail() {
+            if (!currentEmail) {
+                alert((translations[currentLang] || translations['en']).noEmail);
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentEmail)
+                    .then(() => {
+                        alert((translations[currentLang] || translations['en']).copied);
+                    })
+                    .catch(err => {
+                        console.error('Clipboard API failed:', err);
+                        fallbackCopyEmail();
+                    });
+            } else {
+                fallbackCopyEmail();
+            }
+        }
+
+        function fallbackCopyEmail() {
+            const tempInput = document.createElement('input');
+            tempInput.value = currentEmail;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                alert((translations[currentLang] || translations['en']).copied);
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                alert((translations[currentLang] || translations['en']).copyFailed);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function updateTimer() {
+            const now = Date.now();
+            const timeLeft = expirationTime - now;
+            const timer = document.getElementById('timer');
+            if (timeLeft > 0) {
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                timer.textContent = `${translations[currentLang].timeLeft}: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            } else {
+                timer.textContent = translations[currentLang].expired;
+                currentEmail = '';
+                document.getElementById('email').textContent = '';
+            }
+        }
+        setInterval(updateTimer, 1000);
+
+        async function fetchEmails() {
+            if (!currentEmail || Date.now() > expirationTime) return;
+            try {
+                const response = await fetch(`/api/emails/${encodeURIComponent(currentEmail)}`);
+                const data = await response.json();
+                const inbox = document.getElementById('inbox');
+                const t = translations[currentLang] || translations['en'];
+                inbox.innerHTML = data.emails.map(e => `
+                    <div class="email-item">
+                        <div class="email-header">
+                            <span class="email-from">${t.from}: ${e.from}${e.fromName ? ` (${e.fromName})` : ''}</span>
+                            <span class="email-time">${t.received}: ${e.receivedAt}</span>
+                        </div>
+                        <div class="email-subject">${e.subject}</div>
+                        <div class="email-body">${e.body}</div>
+                    </div>
+                `).join('');
+                expirationTime = data.expiresAt;
+            } catch (err) {
+                console.error('Error fetching emails:', err);
+            }
+        }
+
+        setInterval(fetchEmails, 5000);
+    </script>
+</body>
+</html>
